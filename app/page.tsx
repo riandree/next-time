@@ -1,20 +1,52 @@
-export default function Home() {
-  // Mock data - will be replaced with Supabase integration later
+import { createSupabaseClient } from '@/lib/supabase/server';
+
+export default async function Home() {
   const today = new Date();
-  const formattedDate = today.toLocaleDateString('en-US', {
+  const formattedDate = today.toLocaleDateString('de-DE', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
 
+  // Test database connection
+  let connectionStatus = 'unknown';
+  let connectionError: string | null = null;
+  let isAuthenticated = false;
+  
+  try {
+    const supabase = await createSupabaseClient();
+    
+    // Test connection by trying to get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      // Check if it's a session/JWT error (means connected but not authenticated)
+      if (authError.message.includes('session') || authError.message.includes('JWT')) {
+        connectionStatus = 'connected';
+        isAuthenticated = false;
+      } else {
+        // Real connection error
+        connectionStatus = 'error';
+        connectionError = authError.message;
+      }
+    } else {
+      // Successfully connected
+      connectionStatus = 'connected';
+      isAuthenticated = !!user;
+    }
+  } catch (error) {
+    connectionStatus = 'error';
+    connectionError = error instanceof Error ? error.message : 'Unknown error';
+  }
+
   const activeProject = {
     name: "Website Redesign",
     client: "Acme Corp",
   };
 
-  const todaysTime = "0h 0m"; // Placeholder
-  const timeEntries = []; // Placeholder - will show when entries exist
+  const todaysTime = "0h 0m";
+  const timeEntries = [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -28,6 +60,37 @@ export default function Home() {
             Time recording for freelance projects
           </p>
         </header>
+
+        {/* Database Connection Test */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-4">
+            Database Connection Test
+          </h3>
+          <div className="flex items-center gap-3">
+            <div className={`h-3 w-3 rounded-full ${
+              connectionStatus === 'connected' 
+                ? 'bg-green-500' 
+                : connectionStatus === 'error' 
+                ? 'bg-red-500' 
+                : 'bg-yellow-500'
+            }`} />
+            <div>
+              <p className="text-sm font-medium text-slate-900 dark:text-slate-50">
+                Status: {connectionStatus === 'connected' ? 'Connected' : connectionStatus === 'error' ? 'Error' : 'Unknown'}
+              </p>
+              {connectionError && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                  {connectionError}
+                </p>
+              )}
+              {connectionStatus === 'connected' && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  Successfully connected to Supabase! {isAuthenticated ? '(Authenticated)' : '(Not logged in)'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Dashboard Card */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
