@@ -1,6 +1,8 @@
-import type { Tables } from '@/lib/supabase/types';
-import { DocumentPlusIcon } from '@heroicons/react/24/solid'
+'use client';
 
+import { useState } from 'react';
+import type { Tables } from '@/lib/supabase/types';
+import { DocumentPlusIcon } from '@heroicons/react/24/solid';
 
 interface TimeEntry extends Tables<'time_entries'> {
   projects?: {
@@ -24,6 +26,52 @@ interface MonthCalendarProps {
 }
 
 export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
+  const [editingDay, setEditingDay] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+
+  // Normalize time input: accepts both "0900" and "09:00" formats
+  const normalizeTimeInput = (input: string): string => {
+    // Remove all non-digit characters
+    const digits = input.replace(/\D/g, '');
+    
+    if (digits.length === 4) {
+      const hours = digits.slice(0, -2).padStart(2, '0');
+      const minutes = digits.slice(-2).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+    
+    return input;
+  };
+
+  const handleTimeInputChange = (
+    value: string,
+    setter: (value: string) => void
+  ) => {
+    const normalized = normalizeTimeInput(value);
+    setter(normalized);
+  };
+
+  const handleAddClick = (dayDate: Date) => {
+    const dayKey = dayDate.toISOString();
+    setEditingDay(dayKey);
+    setStartTime('');
+    setEndTime('');
+  };
+
+  const handleCancel = () => {
+    setEditingDay(null);
+    setStartTime('');
+    setEndTime('');
+  };
+
+  const handleAccept = () => {
+    // TODO: Validate times and save to Supabase
+    // For now, just close the form
+    console.log('Accept clicked', { startTime, endTime, day: editingDay });
+    handleCancel();
+  };
+
   const formatTime = (timeString: string) => {
     // timeString is in format "HH:MM:SS" or "HH:MM"
     const [hours, minutes] = timeString.split(':').map(Number);
@@ -150,13 +198,67 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50"
-                  aria-label={`Add time entry for ${dayOfWeek}, ${dayNumber}`}
-                >
-                  <DocumentPlusIcon className="size-6" />
-                </button>
+                {editingDay === day.date.toISOString() ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500 dark:text-slate-400">
+                          Start
+                        </label>
+                        <input
+                          type="text"
+                          value={startTime}
+                          onChange={(e) =>
+                            handleTimeInputChange(e.target.value, setStartTime)
+                          }
+                          placeholder="09:00"
+                          className="w-20 px-2 py-1 text-sm font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500"
+                          autoFocus
+                        />
+                      </div>
+                      <span className="text-slate-400 dark:text-slate-500 mt-5">-</span>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500 dark:text-slate-400">
+                          End
+                        </label>
+                        <input
+                          type="text"
+                          value={endTime}
+                          onChange={(e) =>
+                            handleTimeInputChange(e.target.value, setEndTime)
+                          }
+                          placeholder="17:00"
+                          className="w-20 px-2 py-1 text-sm font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAccept}
+                      className="px-3 py-1.5 bg-slate-900 dark:bg-slate-50 text-white dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors text-sm font-medium"
+                      aria-label="Accept time entry"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-sm font-medium"
+                      aria-label="Cancel time entry"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleAddClick(day.date)}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50"
+                    aria-label={`Add time entry for ${dayOfWeek}, ${dayNumber}`}
+                  >
+                    <DocumentPlusIcon className="size-6" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
