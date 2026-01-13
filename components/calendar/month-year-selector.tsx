@@ -1,16 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, Suspense } from 'react';
 
 interface MonthYearSelectorProps {
   selectedMonth: number; // 0-11 (JavaScript Date month)
-  selectedYear: number
+  selectedYear: number;
 }
 
-export function MonthYearSelector({
+function MonthYearSelector({
   selectedMonth,
-  selectedYear
+  selectedYear,
 }: MonthYearSelectorProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const updateUrl = useCallback((month: number, year: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('month', (month + 1).toString()); // Store as 1-12 for readability
+    params.set('year', year.toString());
+    router.push(`?${params.toString()}`, { scroll: false });
+  }, [router, searchParams]);
+
   const months = [
     'January',
     'February',
@@ -28,34 +39,34 @@ export function MonthYearSelector({
 
   const handlePreviousMonth = () => {
     if (selectedMonth === 0) {
-      onMonthYearChange(11, selectedYear - 1);
+      updateUrl(11, selectedYear - 1);
     } else {
-      onMonthYearChange(selectedMonth - 1, selectedYear);
+      updateUrl(selectedMonth - 1, selectedYear);
     }
   };
 
   const handleNextMonth = () => {
     if (selectedMonth === 11) {
-      onMonthYearChange(0, selectedYear + 1);
+      updateUrl(0, selectedYear + 1);
     } else {
-      onMonthYearChange(selectedMonth + 1, selectedYear);
+      updateUrl(selectedMonth + 1, selectedYear);
     }
   };
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onMonthYearChange(parseInt(e.target.value), selectedYear);
+    updateUrl(parseInt(e.target.value), selectedYear);
   };
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onMonthYearChange(selectedMonth, parseInt(e.target.value));
+    updateUrl(selectedMonth, parseInt(e.target.value));
   };
 
   // Generate year options (current year ± 10 years)
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i);
+  const years = Array.from({ length: 11 }, (_, i) => currentYear - 10 + i);
 
   return (
-    <div className="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-6">
+    <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">
         <button
           onClick={handlePreviousMonth}
@@ -127,12 +138,27 @@ export function MonthYearSelector({
       <button
         onClick={() => {
           const today = new Date();
-          onMonthYearChange(today.getMonth(), today.getFullYear());
+          updateUrl(today.getMonth(), today.getFullYear());
         }}
         className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-50 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
       >
         Today
       </button>
     </div>
+  );
+}
+
+// Wrapper component with Suspense for useSearchParams
+export function MonthYearSelectorWithSuspense(props: MonthYearSelectorProps) {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-32 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
+        </div>
+      </div>
+    }>
+      <MonthYearSelector {...props} />
+    </Suspense>
   );
 }
