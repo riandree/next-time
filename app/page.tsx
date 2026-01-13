@@ -1,4 +1,6 @@
 import { createSupabaseClient } from '@/lib/supabase/server';
+import { MonthYearSelector } from '@/components/calendar/month-year-selector';
+
 
 export default async function Home() {
   const today = new Date();
@@ -81,6 +83,11 @@ export default async function Home() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Month Year Selector */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+          <MonthYearSelector selectedMonth={today.getMonth()} selectedYear={today.getFullYear()} />
         </div>
 
         {/* Dashboard Card */}
