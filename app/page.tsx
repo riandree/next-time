@@ -54,8 +54,13 @@ export default async function Home({ searchParams }: HomeProps) {
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
   
+  // Check if we're viewing the current month
+  const isCurrentMonth = month === currentMonth && year === currentYear;
+  const todayDate = today.getDate();
+  
   const days: DayData[] = [];
-  for (let day = 1; day <= daysInMonth; day++) {
+  for (let day = 1; day <= (isCurrentMonth ? todayDate : daysInMonth); day++) {
+
     days.push({
       date: new Date(year, month, day),
       timeEntries: [],
