@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { createSupabaseClient } from '@/lib/supabase/server';
 import { MonthYearSelectorWithSuspense } from '@/components/calendar/month-year-selector';
 import { MonthCalendar } from '@/components/calendar/month-calendar';
@@ -25,14 +26,28 @@ interface DayData {
 export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
   const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
   
   // Get month and year from URL params, default to current month/year
-  const selectedMonth = params.month ? parseInt(params.month) - 1 : today.getMonth(); // Convert 1-12 to 0-11
-  const selectedYear = params.year ? parseInt(params.year) : today.getFullYear();
+  const selectedMonth = params.month ? parseInt(params.month) - 1 : currentMonth; // Convert 1-12 to 0-11
+  const selectedYear = params.year ? parseInt(params.year) : currentYear;
   
-  // Validate the month and year
-  const month = selectedMonth >= 0 && selectedMonth <= 11 ? selectedMonth : today.getMonth();
-  const year = selectedYear >= 1900 && selectedYear <= 2100 ? selectedYear : today.getFullYear();
+  // Validate the month and year - ensure they're not in the future
+  let month = selectedMonth >= 0 && selectedMonth <= 11 ? selectedMonth : currentMonth;
+  let year = selectedYear >= 1900 && selectedYear <= 2100 ? selectedYear : currentYear;
+  
+  // Check if the selected month/year is in the future
+  const isFutureMonth = (m: number, y: number) => {
+    if (y > currentYear) return true;
+    if (y === currentYear && m > currentMonth) return true;
+    return false;
+  };
+  
+  // If future month is selected, redirect to current month
+  if (isFutureMonth(month, year)) {
+    redirect(`/?month=${currentMonth + 1}&year=${currentYear}`);
+  }
 
   // Generate all days in the selected month
   const firstDay = new Date(year, month, 1);
