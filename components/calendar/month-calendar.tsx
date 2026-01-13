@@ -1,4 +1,6 @@
 import type { Tables } from '@/lib/supabase/types';
+import { DocumentPlusIcon } from '@heroicons/react/24/solid'
+
 
 interface TimeEntry extends Tables<'time_entries'> {
   projects?: {
@@ -75,7 +77,7 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
             } p-4 hover:shadow-sm transition-shadow`}
           >
             <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-1">
                 <div className="flex flex-col">
                   <span
                     className={`text-sm font-medium ${
@@ -138,14 +140,24 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
                 </div>
               </div>
 
-              {day.totalMinutes > 0 && (
-                <div className="text-right">
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total</p>
-                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                    {formatDuration(day.totalMinutes)}
-                  </p>
-                </div>
-              )}
+              <div className="flex items-center gap-4">
+                {day.totalMinutes > 0 && (
+                  <div className="text-right">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total</p>
+                    <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                      {formatDuration(day.totalMinutes)}
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50"
+                  aria-label={`Add time entry for ${dayOfWeek}, ${dayNumber}`}
+                >
+                  <DocumentPlusIcon className="size-6" />
+                </button>
+              </div>
             </div>
           </div>
         );
