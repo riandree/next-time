@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
-import { createSupabaseClient } from '@/lib/supabase/server';
 import { MonthYearSelectorWithSuspense } from '@/components/calendar/month-year-selector';
 import { MonthCalendar } from '@/components/calendar/month-calendar';
+import { getTimeEntriesForMonth } from '@/app/actions/time-entries';
 import type { Tables } from '@/lib/supabase/types';
 
 interface HomeProps {
@@ -58,17 +58,88 @@ export default async function Home({ searchParams }: HomeProps) {
   const isCurrentMonth = month === currentMonth && year === currentYear;
   const todayDate = today.getDate();
   
+  // Fetch time entries for the selected month
+  const { entries: timeEntries } = await getTimeEntriesForMonth(month, year);
+
+  // Helper function to calculate duration in minutes
+  const calculateDuration = (startTime: string, endTime: string): number => {
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    const startTotal = startHours * 60 + startMinutes;
+    const endTotal = endHours * 60 + endMinutes;
+    return endTotal - startTotal;
+  };
+
+  // Helper function to format date as YYYY-MM-DD for comparison
+  const formatDateString = (date: Date): string => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  // Create a map of date strings to time entries
+  const entriesByDate = new Map<string, TimeEntryWithRelations[]>();
+  if (timeEntries) {
+    for (const entry of timeEntries) {
+      const dateStr = entry.date;
+      if (!entriesByDate.has(dateStr)) {
+        entriesByDate.set(dateStr, []);
+      }
+      
+      // Transform the entry to match the expected type structure
+      const transformedEntry: TimeEntryWithRelations = {
+        id: entry.id,
+        user_id: entry.user_id,
+        project_id: entry.project_id,
+        date: entry.date,
+        start_time: entry.start_time,
+        end_time: entry.end_time,
+        created_at: entry.created_at,
+        projects: entry.projects
+          ? {
+              name: entry.projects.name,
+              clients: entry.projects.clients
+                ? {
+                    name: entry.projects.clients.name,
+                  }
+                : undefined,
+            }
+          : undefined,
+      };
+      
+      entriesByDate.get(dateStr)!.push(transformedEntry);
+    }
+  }
+
+  // Generate days array with time entries
   const days: DayData[] = [];
   for (let day = 1; day <= (isCurrentMonth ? todayDate : daysInMonth); day++) {
+    const dayDate = new Date(year, month, day);
+    const dateStr = formatDateString(dayDate);
+    const entries = entriesByDate.get(dateStr) || [];
+    
+    // Calculate total minutes for the day
+    const totalMinutes = entries.reduce((sum, entry) => {
+      return sum + calculateDuration(entry.start_time, entry.end_time);
+    }, 0);
 
     days.push({
-      date: new Date(year, month, day),
-      timeEntries: [],
-      totalMinutes: 0,
+      date: dayDate,
+      timeEntries: entries,
+      totalMinutes,
     });
   }
 
   const monthName = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  // Calculate total hours for the month
+  const totalMinutes = days.reduce((sum, day) => sum + day.totalMinutes, 0);
+  const totalHours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+  const formatTotalHours = () => {
+    if (totalHours === 0 && remainingMinutes === 0) return '0h';
+    if (totalHours === 0) return `${remainingMinutes}m`;
+    if (remainingMinutes === 0) return `${totalHours}h`;
+    return `${totalHours}h ${remainingMinutes}m`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -79,10 +150,16 @@ export default async function Home({ searchParams }: HomeProps) {
         </div>
 
         {/* Calendar Header */}
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
             {monthName}
           </h1>
+          <div className="text-right">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Hours</p>
+            <p className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
+              {formatTotalHours()}
+            </p>
+          </div>
         </div>
 
         {/* Calendar View */}
