@@ -1,4 +1,4 @@
-import { getClients } from '@/app/actions/clients';
+import { getClients } from '@/actions/clients';
 import { ClientList } from '@/components/clients/client-list';
 
 export default async function ClientsPage() {

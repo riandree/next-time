@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { MonthYearSelectorWithSuspense } from '@/components/calendar/month-year-selector';
 import { MonthCalendar } from '@/components/calendar/month-calendar';
-import { getTimeEntriesForMonth } from '@/app/actions/time-entries';
+import { getTimeEntriesForMonth } from '@/actions/time-entries';
 import type { Tables } from '@/lib/supabase/types';
 
 interface HomeProps {

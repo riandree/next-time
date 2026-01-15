@@ -4,6 +4,18 @@ import { createSupabaseClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { TablesInsert } from '@/lib/supabase/types';
 
+export async function deleteTimeEntry(timeEntryId : string) {
+  const supabase = await createSupabaseClient();
+  const { error } = await supabase.from('time_entries').delete().eq('id', timeEntryId);
+	
+  if (error) {
+    return { error: error.message || 'Failed to delete time entry' };
+  }
+
+  revalidatePath('/');
+  return { success: true };
+}
+
 export async function createTimeEntry(
   projectId: string,
   date: string,

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Tables } from '@/lib/supabase/types';
 import { DocumentPlusIcon, TrashIcon } from '@heroicons/react/24/solid';
-import { createTimeEntry, getActiveProjects } from '@/app/actions/time-entries';
+import { createTimeEntry, getActiveProjects, deleteTimeEntry } from '@/actions/time-entries';
 
 interface TimeEntry extends Tables<'time_entries'> {
   projects?: {
@@ -92,6 +92,15 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
       setProjectId(result.projects[0].id);
     } else {
       setError('No active projects found. Please create a project first.');
+    }
+  };
+
+  const handleDelete = async (timeEntryId : string) => {
+    const result = await deleteTimeEntry(timeEntryId);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      router.refresh();
     }
   };
 

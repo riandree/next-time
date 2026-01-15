@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { deleteClient } from '@/app/actions/clients';
+import { deleteClient } from '@/actions/clients';
 
 interface DeleteClientDialogProps {
   clientId: string;

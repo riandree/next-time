@@ -27,9 +27,10 @@ Next Time is built with Next.js 16 (App Router) and uses Supabase for authentica
 
 ```
 next-time/
+├── actions/                # Server actions
+│   ├── time-entries.ts     # Time entry CRUD operations
+│   └── clients.ts         # Client CRUD operations
 ├── app/
-│   ├── actions/           # Server actions
-│   │   └── time-entries.ts # Time entry CRUD operations
 │   ├── login/             # Login page
 │   ├── signup/            # Signup page
 │   ├── layout.tsx          # Root layout with Header
@@ -204,10 +205,17 @@ Required environment variables (in `.env.local`):
 
 ### Server Actions
 
-Server actions are defined in `app/actions/time-entries.ts`:
-- `createTimeEntry()` - Creates a new time entry with validation
-- `getActiveProjects()` - Fetches active projects with client information
-- `getTimeEntriesForMonth()` - Fetches all time entries for a given month/year
+Server actions are defined in `actions/`:
+- `actions/time-entries.ts`:
+  - `createTimeEntry()` - Creates a new time entry with validation
+  - `getActiveProjects()` - Fetches active projects with client information
+  - `getTimeEntriesForMonth()` - Fetches all time entries for a given month/year
+  - `deleteTimeEntry()` - Deletes a time entry
+- `actions/clients.ts`:
+  - `getClients()` - Fetches all clients for the user
+  - `createClient()` - Creates a new client
+  - `updateClient()` - Updates an existing client
+  - `deleteClient()` - Deletes a client
 
 All server actions:
 - Use `'use server'` directive
