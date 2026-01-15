@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Tables } from '@/lib/supabase/types';
-import { DocumentPlusIcon } from '@heroicons/react/24/solid';
+import { DocumentPlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { createTimeEntry, getActiveProjects } from '@/app/actions/time-entries';
 
 interface TimeEntry extends Tables<'time_entries'> {
@@ -22,8 +22,6 @@ interface DayData {
 }
 
 interface MonthCalendarProps {
-  month: number; // 0-11 (JavaScript Date month)
-  year: number;
   days: DayData[];
 }
 
@@ -36,7 +34,7 @@ interface Project {
   } | null;
 }
 
-export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
+export function MonthCalendar({ days }: MonthCalendarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [editingDay, setEditingDay] = useState<string | null>(null);
@@ -97,7 +95,7 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
     }
   };
 
-  const handleCancel = () => {
+  const resetEditing = () => {
     setEditingDay(null);
     setStartTime('');
     setEndTime('');
@@ -150,7 +148,7 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
         setError(result.error);
       } else {
         // Success - refresh the page to show the new entry
-        handleCancel();
+        resetEditing();
         router.refresh();
       }
     });
@@ -230,7 +228,6 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
         const dayNumber = day.date.getDate();
         const isCurrentDay = isToday(day.date);
         const hasEntries = day.timeEntries.length > 0;
-        const hasNoEntries = day.timeEntries.length === 0;
 
         return (
           <div
@@ -243,175 +240,182 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
                   : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/50'
             } p-4 hover:shadow-sm transition-shadow`}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="flex flex-col w-24 flex-shrink-0">
-                  <span
-                    className={`text-sm font-medium ${
-                      isCurrentDay
-                        ? 'text-slate-900 dark:text-slate-50'
-                        : 'text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {dayOfWeek}
-                  </span>
-                  <span
-                    className={`text-2xl font-bold ${
-                      isCurrentDay
-                        ? 'text-slate-900 dark:text-slate-50'
-                        : 'text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    {dayNumber}
-                  </span>
+            <div className="space-y-3">
+              {/* Header row with day info and total/add button */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="flex flex-col w-24 flex-shrink-0">
+                    <span
+                      className={`text-sm font-medium ${
+                        isCurrentDay
+                          ? 'text-slate-900 dark:text-slate-50'
+                          : 'text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      {dayOfWeek}
+                    </span>
+                    <span
+                      className={`text-2xl font-bold ${
+                        isCurrentDay
+                          ? 'text-slate-900 dark:text-slate-50'
+                          : 'text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {dayNumber}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    {day.timeEntries.length === 0 ? (
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        No time entries
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {day.timeEntries.map((entry) => {
+                          const duration = calculateDuration(entry.start_time, entry.end_time);
+                          return (
+                            <div
+                              key={entry.id}
+                              className="flex items-center gap-3 text-sm"
+                            >
+                              <button onClick={() => handleDelete(entry.id)}><TrashIcon className="size-4" /></button>                             
+                              <span className="text-slate-600 dark:text-slate-400 font-mono">
+                                {formatTime(entry.start_time)} - {formatTime(entry.end_time)}
+                              </span>
+                              <span className="text-slate-500 dark:text-slate-500">•</span>
+                              <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                {entry.projects?.name || 'Unknown Project'}
+                              </span>
+                              {entry.projects?.clients?.name && (
+                                <>
+                                  <span className="text-slate-500 dark:text-slate-500">•</span>
+                                  <span className="text-slate-600 dark:text-slate-400">
+                                    {entry.projects.clients.name}
+                                  </span>
+                                </>
+                              )}
+                              <span className="text-slate-500 dark:text-slate-500">•</span>
+                              <span className="text-slate-600 dark:text-slate-400">
+                                {formatDuration(duration)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  {day.timeEntries.length === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      No time entries
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {day.timeEntries.map((entry) => {
-                        const duration = calculateDuration(entry.start_time, entry.end_time);
-                        return (
-                          <div
-                            key={entry.id}
-                            className="flex items-center gap-3 text-sm"
-                          >
-                            <span className="text-slate-600 dark:text-slate-400 font-mono">
-                              {formatTime(entry.start_time)} - {formatTime(entry.end_time)}
-                            </span>
-                            <span className="text-slate-500 dark:text-slate-500">•</span>
-                            <span className="text-slate-700 dark:text-slate-300 font-medium">
-                              {entry.projects?.name || 'Unknown Project'}
-                            </span>
-                            {entry.projects?.clients?.name && (
-                              <>
-                                <span className="text-slate-500 dark:text-slate-500">•</span>
-                                <span className="text-slate-600 dark:text-slate-400">
-                                  {entry.projects.clients.name}
-                                </span>
-                              </>
-                            )}
-                            <span className="text-slate-500 dark:text-slate-500">•</span>
-                            <span className="text-slate-600 dark:text-slate-400">
-                              {formatDuration(duration)}
-                            </span>
-                          </div>
-                        );
-                      })}
+                <div className="flex items-center gap-4">
+                  {day.totalMinutes > 0 && (
+                    <div className="text-right">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total</p>
+                      <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                        {formatDuration(day.totalMinutes)}
+                      </p>
                     </div>
+                  )}
+
+                  {editingDay !== day.date.toISOString() && (
+                    <button
+                      type="button"
+                      onClick={() => handleAddClick(day.date)}
+                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50"
+                      aria-label={`Add time entry for ${dayOfWeek}, ${dayNumber}`}
+                    >
+                      <DocumentPlusIcon className="size-6" />
+                    </button>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                {day.totalMinutes > 0 && (
-                  <div className="text-right">
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total</p>
-                    <p className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-                      {formatDuration(day.totalMinutes)}
-                    </p>
-                  </div>
-                )}
-
-                {editingDay === day.date.toISOString() ? (
-                  <div className="flex flex-col gap-3">
-                    {error && (
-                      <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800">
-                        {error}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-xs text-slate-500 dark:text-slate-400">
-                            Project
-                          </label>
-                          <select
-                            value={projectId}
-                            onChange={(e) => setProjectId(e.target.value)}
-                            disabled={isLoadingProjects || isPending}
-                            className="px-2 py-1 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]"
-                          >
-                            {isLoadingProjects ? (
-                              <option>Loading...</option>
-                            ) : (
-                              projects.map((project) => (
-                                <option key={project.id} value={project.id}>
-                                  {project.name}
-                                  {project.clients ? ` (${project.clients.name})` : ''}
-                                </option>
-                              ))
-                            )}
-                          </select>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-xs text-slate-500 dark:text-slate-400">
-                            Start
-                          </label>
-                          <input
-                            type="text"
-                            value={startTime}
-                            onChange={(e) =>
-                              handleTimeInputChange(e.target.value, setStartTime)
-                            }
-                            placeholder="09:00"
-                            disabled={isPending}
-                            className="w-20 px-2 py-1 text-sm font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                            autoFocus
-                          />
-                        </div>
-                        <span className="text-slate-400 dark:text-slate-500 mt-5">-</span>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-xs text-slate-500 dark:text-slate-400">
-                            End
-                          </label>
-                          <input
-                            type="text"
-                            value={endTime}
-                            onChange={(e) =>
-                              handleTimeInputChange(e.target.value, setEndTime)
-                            }
-                            placeholder="17:00"
-                            disabled={isPending}
-                            className="w-20 px-2 py-1 text-sm font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleAccept}
-                        disabled={isPending || isLoadingProjects || !projectId}
-                        className="px-3 py-1.5 bg-slate-900 dark:bg-slate-50 text-white dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label="Accept time entry"
-                      >
-                        {isPending ? 'Saving...' : 'Accept'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCancel}
-                        disabled={isPending}
-                        className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label="Cancel time entry"
-                      >
-                        Cancel
-                      </button>
+              {/* Add entry form - appears below existing entries */}
+              {editingDay === day.date.toISOString() && (
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+                  {error && (
+                    <div className="mb-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded border border-red-200 dark:border-red-800">
+                      {error}
                     </div>
+                  )}
+                  <div className="flex items-end gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500 dark:text-slate-400">
+                          Project
+                        </label>
+                        <select
+                          value={projectId}
+                          onChange={(e) => setProjectId(e.target.value)}
+                          disabled={isLoadingProjects || isPending}
+                          className="px-2 py-1 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]"
+                        >
+                          {isLoadingProjects ? (
+                            <option>Loading...</option>
+                          ) : (
+                            projects.map((project) => (
+                              <option key={project.id} value={project.id}>
+                                {project.name}
+                                {project.clients ? ` (${project.clients.name})` : ''}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500 dark:text-slate-400">
+                          Start
+                        </label>
+                        <input
+                          type="text"
+                          value={startTime}
+                          onChange={(e) =>
+                            handleTimeInputChange(e.target.value, setStartTime)
+                          }
+                          placeholder="09:00"
+                          disabled={isPending}
+                          className="w-20 px-2 py-1 text-sm font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          autoFocus
+                        />
+                      </div>
+                      <span className="text-slate-400 dark:text-slate-500 mb-2">-</span>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-slate-500 dark:text-slate-400">
+                          End
+                        </label>
+                        <input
+                          type="text"
+                          value={endTime}
+                          onChange={(e) =>
+                            handleTimeInputChange(e.target.value, setEndTime)
+                          }
+                          placeholder="17:00"
+                          disabled={isPending}
+                          className="w-20 px-2 py-1 text-sm font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAccept}
+                      disabled={isPending || isLoadingProjects || !projectId}
+                      className="px-4 py-2 bg-slate-900 dark:bg-slate-50 text-white dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Accept time entry"
+                    >
+                      {isPending ? 'Saving...' : 'Accept'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetEditing}
+                      disabled={isPending}
+                      className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Cancel time entry"
+                    >
+                      Cancel
+                    </button>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleAddClick(day.date)}
-                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50"
-                    aria-label={`Add time entry for ${dayOfWeek}, ${dayNumber}`}
-                  >
-                    <DocumentPlusIcon className="size-6" />
-                  </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         );

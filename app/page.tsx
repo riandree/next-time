@@ -164,7 +164,7 @@ export default async function Home({ searchParams }: HomeProps) {
 
         {/* Calendar View */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-          <MonthCalendar month={month} year={year} days={days} />
+          <MonthCalendar days={days} />
         </div>
       </div>
     </div>
