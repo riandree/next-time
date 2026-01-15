@@ -9,6 +9,7 @@ export function Navigation() {
   const links = [
     { href: '/', label: 'Calendar' },
     { href: '/clients', label: 'Clients' },
+    { href: '/projects', label: 'Projects' },
   ];
 
   return (
