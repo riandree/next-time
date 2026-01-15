@@ -46,6 +46,7 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showWeekends, setShowWeekends] = useState(false);
 
   // Normalize time input: accepts both "0900" and "09:00" formats
   const normalizeTimeInput = (input: string): string => {
@@ -191,9 +192,40 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
     );
   };
 
+  const isWeekend = (date: Date) => {
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
+  };
+
+  // Filter days: show weekends only if showWeekends is true OR if they have time entries
+  const filteredDays = days.filter((day) => {
+    if (isWeekend(day.date)) {
+      return showWeekends || day.timeEntries.length > 0;
+    }
+    return true;
+  });
+
   return (
-    <div className="space-y-2">
-      {days.map((day) => {
+    <div className="space-y-4">
+      {/* Show Weekends Checkbox */}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="show-weekends"
+          checked={showWeekends}
+          onChange={(e) => setShowWeekends(e.target.checked)}
+          className="w-4 h-4 text-slate-600 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-slate-500 dark:focus:ring-slate-400 focus:ring-offset-0 cursor-pointer"
+        />
+        <label
+          htmlFor="show-weekends"
+          className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none"
+        >
+          Show weekends
+        </label>
+      </div>
+
+      <div className="space-y-2">
+        {filteredDays.map((day) => {
         const dayOfWeek = day.date.toLocaleDateString('en-US', { weekday: 'long' });
         const dayNumber = day.date.getDate();
         const isCurrentDay = isToday(day.date);
@@ -213,7 +245,7 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4 flex-1">
-                <div className="flex flex-col">
+                <div className="flex flex-col w-24 flex-shrink-0">
                   <span
                     className={`text-sm font-medium ${
                       isCurrentDay
@@ -234,7 +266,7 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
                   </span>
                 </div>
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   {day.timeEntries.length === 0 ? (
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       No time entries
@@ -384,6 +416,7 @@ export function MonthCalendar({ month, year, days }: MonthCalendarProps) {
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
