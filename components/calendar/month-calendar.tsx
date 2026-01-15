@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { Tables } from '@/lib/supabase/types';
 import { DocumentPlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 import { createTimeEntry, getActiveProjects, deleteTimeEntry } from '@/actions/time-entries';
+import { ConfirmDialog } from '@/components/confirm/confirm-dialog';
 
 interface TimeEntry extends Tables<'time_entries'> {
   projects?: {
@@ -37,6 +38,7 @@ interface Project {
 export function MonthCalendar({ days }: MonthCalendarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [deletingTimeEntry, setDeletingTimeEntry] = useState<string | null>(null);
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -100,6 +102,7 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
     if (result.error) {
       setError(result.error);
     } else {
+      setDeletingTimeEntry(null);
       router.refresh();
     }
   };
@@ -213,6 +216,7 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
   });
 
   return (
+    <>
     <div className="space-y-4">
       {/* Show Weekends Checkbox */}
       <div className="flex items-center gap-2">
@@ -288,7 +292,7 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
                               key={entry.id}
                               className="flex items-center gap-3 text-sm"
                             >
-                              <button onClick={() => handleDelete(entry.id)}><TrashIcon className="size-4" /></button>                             
+                              <button onClick={() => setDeletingTimeEntry(entry.id) }><TrashIcon className="size-4" /></button>                             
                               <span className="text-slate-600 dark:text-slate-400 font-mono">
                                 {formatTime(entry.start_time)} - {formatTime(entry.end_time)}
                               </span>
@@ -348,7 +352,7 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
                     </div>
                   )}
                   <div className="flex items-end gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-end gap-2 bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
                       <div className="flex flex-col gap-1">
                         <label className="text-xs text-slate-500 dark:text-slate-400">
                           Project
@@ -403,8 +407,8 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
                           className="w-20 px-2 py-1 text-sm font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
                       </div>
-                    </div>
-                    <button
+
+                      <button
                       type="button"
                       onClick={handleAccept}
                       disabled={isPending || isLoadingProjects || !projectId}
@@ -422,6 +426,7 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
                     >
                       Cancel
                     </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -431,5 +436,16 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
       })}
       </div>
     </div>
+    { 
+      deletingTimeEntry && (
+        <ConfirmDialog
+          message="Are you sure you want to delete this time entry?"
+          confirmButtonText="Delete"
+          onConfirm={ () => handleDelete(deletingTimeEntry) }
+          onCancel={() => setDeletingTimeEntry(null)}
+        />
+      )
+    }
+    </>
   );
 }
