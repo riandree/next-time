@@ -43,7 +43,7 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [projectId, setProjectId] = useState('');
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectName, setProjectName] = useState<string>("");
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWeekends, setShowWeekends] = useState(false);
@@ -89,21 +89,9 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
     }
 
     if (result.projects && result.projects.length > 0) {
-      setProjects(result.projects);
       // Auto-select first project if available
+      setProjectName(result.projects[0].name);
       setProjectId(result.projects[0].id);
-    } else {
-      setError('No active projects found. Please create a project first.');
-    }
-  };
-
-  const handleDelete = async (timeEntryId : string) => {
-    const result = await deleteTimeEntry(timeEntryId);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      setDeletingTimeEntry(null);
-      router.refresh();
     }
   };
 
@@ -357,23 +345,11 @@ export function MonthCalendar({ days }: MonthCalendarProps) {
                         <label className="text-xs text-slate-500 dark:text-slate-400">
                           Project
                         </label>
-                        <select
-                          value={projectId}
-                          onChange={(e) => setProjectId(e.target.value)}
-                          disabled={isLoadingProjects || isPending}
+                        <input
+                          value={projectName}
+                          disabled
                           className="px-2 py-1 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]"
-                        >
-                          {isLoadingProjects ? (
-                            <option>Loading...</option>
-                          ) : (
-                            projects.map((project) => (
-                              <option key={project.id} value={project.id}>
-                                {project.name}
-                                {project.clients ? ` (${project.clients.name})` : ''}
-                              </option>
-                            ))
-                          )}
-                        </select>
+                        />                          
                       </div>
                       <div className="flex flex-col gap-1">
                         <label className="text-xs text-slate-500 dark:text-slate-400">
